@@ -14,5 +14,8 @@
     "@anthropic-ai/sdk": "^0.52.0",
     "@modelcontextprotocol/sdk": "^1.12.1",
     "dotenv": "^16.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.27"
   }
 }
