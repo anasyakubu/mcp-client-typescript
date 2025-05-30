@@ -65,31 +65,54 @@ class MCPClient {
             tools: this.tools,
         });
         const finalText = [];
-        const toolResults = [];
+        let toolCallHappened = false;
         for (const content of response.content) {
             if (content.type === "text") {
                 finalText.push(content.text);
             }
             else if (content.type === "tool_use") {
+                toolCallHappened = true;
                 const toolName = content.name;
+                // Explicit cast: content.input is unknown
                 const toolArgs = content.input;
                 const result = await this.mcp.callTool({
                     name: toolName,
                     arguments: toolArgs,
                 });
-                toolResults.push(result);
-                finalText.push(`[Calling tool ${toolName} with args ${JSON.stringify(toolArgs)}]`);
+                // Cast result.content to expected format
+                const toolResponseContent = result.content;
+                const toolResponseText = toolResponseContent && toolResponseContent.length > 0
+                    ? toolResponseContent[0].text
+                    : "[No response text]";
+                finalText.push(`[Tool ${toolName} result]: ${toolResponseText}`);
+                // Update conversation with tool response
                 messages.push({
                     role: "user",
-                    content: result.content,
+                    content: toolResponseText,
                 });
-                const response = await this.anthropic.messages.create({
+                // Get final response from Anthropic
+                const followUpResponse = await this.anthropic.messages.create({
                     model: "claude-3-5-sonnet-20241022",
                     max_tokens: 1000,
                     messages,
                 });
-                finalText.push(response.content[0].type === "text" ? response.content[0].text : "");
+                const followUpText = followUpResponse.content[0].type === "text"
+                    ? followUpResponse.content[0].text
+                    : "";
+                finalText.push(followUpText);
             }
+        }
+        // Optional fallback: if no tool was called, still provide fallback response
+        if (!toolCallHappened) {
+            const result = await this.mcp.callTool({
+                name: "ask_ai",
+                arguments: { question: query },
+            });
+            const aiResponseContent = result.content;
+            const aiResponseText = aiResponseContent && aiResponseContent.length > 0
+                ? aiResponseContent[0].text
+                : "[No response text]";
+            finalText.push(`[ask_ai fallback]: ${aiResponseText}`);
         }
         return finalText.join("\n");
     }
@@ -118,7 +141,7 @@ class MCPClient {
         await this.mcp.close();
     }
 }
-// 🟩 Moved OUTSIDE the class:
+// Main entry point
 async function main() {
     if (process.argv.length < 3) {
         console.log("Usage: node index.ts <path_to_server_script>");
