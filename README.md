@@ -1,4 +1,3 @@
----
 
 ```markdown
 # MCP Docs Server
@@ -121,9 +120,4 @@ MIT License.
 * [Model Context Protocol (MCP)](https://modelcontext.org/)
 * [Serper API](https://serper.dev/)
 
-```
-
----
-
-Would you like me to create this file in a downloadable `.md` file for you? Let me know if you want to customize sections or add more details! 🚀
 ```
